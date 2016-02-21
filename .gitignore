@@ -1,5 +1,5 @@
 *~
 *.pyc
-build
+/build/*
 paperwork.conf
 /src/paperwork/backend/*

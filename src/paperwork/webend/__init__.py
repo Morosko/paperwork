@@ -36,13 +36,14 @@ class WebHandler(SimpleHTTPRequestHandler):
             self.send_header("Content-Type", mimetype)
             self.end_headers()
             print(binary)
-            if binary:
+            if bool(binary):
                 f = open(os.curdir + self.path.split("?")[0], "rb")
                 self.wfile.write(f.read())
+                f.close()
             else:
                 f = open(os.curdir + self.path.split("?")[0])
-            self.wfile.write(bytes(f.read(), "utf-8"))
-            f.close()
+                self.wfile.write(bytes(f.read(), "utf-8"))
+                f.close()
         except IOError:
             self.send_error(404, "File Not Found:" + os.curdir + self.path)
 
@@ -62,7 +63,7 @@ class WebHandler(SimpleHTTPRequestHandler):
         if s.path.endswith(".js"):
             s._send_response("application/javascript")
         if s.path.endswith(".png"):
-            s._send_response("image/png")
+            s._send_response("image/png", True)
         if s.path.endswith(".properties"):
             s._send_response("text/plain")
         if s.path.split('?')[0].endswith(".pdf"):
