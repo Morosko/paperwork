@@ -54,7 +54,8 @@ class WebHandler(SimpleHTTPRequestHandler):
             self.send_error(404, "File Not Found:" + os.curdir + self.path)
 
     def _get_search_suggestions(self, term):
-        suggestions = self.searchdoc.find_suggestions(term)
+        global searchdoc
+        suggestions = searchdoc.find_suggestions(term)
         self.send_response(200)
         self.send_header("Content-Type", "text/html")
         self.end_headers()
@@ -69,10 +70,12 @@ class WebHandler(SimpleHTTPRequestHandler):
         if s.path == "/":
             s.path = "/pages/index.html"
 
-        print(os.path.abspath(os.curdir + s.path.split("?")[0]))
+        print(s.path)
 
-        if s.path.split('?')[0] == "search":
-            _get_search_suggestions(s.path.split('?')[1].replace("term=", ""))
+        if s.path.split('?')[0].replace("/", "") == "search":
+            logger.info("Send suggestion")
+            s._get_search_suggestions(
+                s.path.split('?')[1].replace("term=", ""))
         if s.path.split('?')[0].endswith(".html"):
             s._send_response("text/html")
         if s.path.endswith(".css"):
@@ -92,6 +95,7 @@ class WebHandler(SimpleHTTPRequestHandler):
 
 
 def main():
+    global searchdoc
     formatter = logging.Formatter(
         '%(levelname)-6s %(name)-30s %(message)s')
     handler = logging.StreamHandler()
