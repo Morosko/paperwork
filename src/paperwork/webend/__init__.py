@@ -19,12 +19,14 @@
 
 import sys
 import os
-import paperwork_backend.config as config
-from paperwork_backend.docsearch import DocSearch
+from paperwork.backend import config
+from paperwork.backend.docsearch import DocSearch
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import logging
 
 logger = logging.getLogger(__name__)
+pconfig = None
+searchdoc = None
 
 #
 # Request handler
@@ -32,12 +34,6 @@ logger = logging.getLogger(__name__)
 
 
 class WebHandler(SimpleHTTPRequestHandler):
-    def __init__(self, config):
-        logger.info("Creating DocSearch opject")
-        self.searchdoc = DocSearch(config.settings['workdir'].value)
-        logger.info("DocSearch object created")
-        self.config = config
-
     def _send_response(self, mimetype, binary=False):
         try:
             self.send_response(200)
@@ -45,11 +41,13 @@ class WebHandler(SimpleHTTPRequestHandler):
             self.end_headers()
             print(binary)
             if bool(binary):
-                f = open(os.curdir + self.path.split("?")[0], "rb")
+                f = open(os.path.dirname(os.path.abspath(__file__)) +
+                         self.path.split("?")[0], "rb")
                 self.wfile.write(f.read())
                 f.close()
             else:
-                f = open(os.curdir + self.path.split("?")[0])
+                f = open(os.path.dirname(os.path.abspath(__file__)) +
+                         self.path.split("?")[0])
                 self.wfile.write(bytes(f.read(), "utf-8"))
                 f.close()
         except IOError:
@@ -71,7 +69,9 @@ class WebHandler(SimpleHTTPRequestHandler):
         if s.path == "/":
             s.path = "/pages/index.html"
 
-        if s.path.split('?')[0].equals("search"):
+        print(os.path.abspath(os.curdir + s.path.split("?")[0]))
+
+        if s.path.split('?')[0] == "search":
             _get_search_suggestions(s.path.split('?')[1].replace("term=", ""))
         if s.path.split('?')[0].endswith(".html"):
             s._send_response("text/html")
@@ -90,8 +90,8 @@ class WebHandler(SimpleHTTPRequestHandler):
         if s.path.endswith(".ico"):
             s._send_response("image/x-icon", True)
 
-# for debugging
-if __name__ == '__main__':
+
+def main():
     formatter = logging.Formatter(
         '%(levelname)-6s %(name)-30s %(message)s')
     handler = logging.StreamHandler()
@@ -109,10 +109,14 @@ if __name__ == '__main__':
     pconfig.read()
     logger.info("Read config...")
 
+    logger.info("Creating DocSearch opject")
+    searchdoc = DocSearch(pconfig.settings['workdir'].value)
+    logger.info("DocSearch object created")
+
     logger.info("WebServer starting...")
 
     ServerClass = HTTPServer
-    httpd = ServerClass(('', 8001), WebHandler(pconfig))
+    httpd = ServerClass(('', 8001), WebHandler)
     try:
         httpd.serve_forever()
         logger.info("WebServer running!")
