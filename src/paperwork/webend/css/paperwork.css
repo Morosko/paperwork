@@ -40,7 +40,7 @@ html, body {
     width: 100%;
     height: 100px;
     line-height: 100px;
-    text-align: center;
+    padding-left: 25px;
     background-color: #616161;
     color: #fff;
 }
@@ -62,15 +62,21 @@ button {
     font-size: 1.5em;
 }
 
-button:hover {
+button:disabled {
+    color: #bdc3c7;
+}
+
+button:hover:enabled {
     background: #424242;
 }
 
+.left-pannel-header button {
+    float: none;
+}
 
 .searchbar {
     width: 100%;
     padding: 25px;
-    text-align: center;
 }
 
 .searchbar input {

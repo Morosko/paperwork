@@ -5,19 +5,25 @@
         <title>Paperwork</title>
         <link rel="shortcut icon" href="img/favicon.ico">
         <link rel="stylesheet" href="css/paperwork.css">
+
+        <script type="application/javascript" src="js/jquery-2.2.0.min.js">
+        </script>
+        <script type="application/javascript" src="js/search.js">
+        </script>
     </head>
 
     <body>
         <div class="left-pannel">
             <div class="left-pannel-header">
                 <h3>Documents</h3>
-                <button>
+                <button disabled title="Coming soon!">
                     +
                 </button>
             </div>
 
             <div class="searchbar">
-                <input type="search" placeholder="Search">
+                <input type="search" id="searchbox" placeholder="Search">
+                <div id="search-suggestions"></div>
             </div>
 
             <div class="document-list-item">
@@ -27,7 +33,7 @@
 
         <div class="main">
             <div class="main-header">
-                <button>Scan</button>
+                <button disabled title="Coming soon!">Scan</button>
             </div>
 
             <iframe src="pages/web/viewer.html?file=test.pdf"

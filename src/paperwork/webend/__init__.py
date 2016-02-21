@@ -19,6 +19,8 @@
 
 import sys
 import os
+import paperwork_backend.config as config
+from paperwork_backend.docsearch import DocSearch
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import logging
 
@@ -30,6 +32,12 @@ logger = logging.getLogger(__name__)
 
 
 class WebHandler(SimpleHTTPRequestHandler):
+    def __init__(self, config):
+        logger.info("Creating DocSearch opject")
+        self.searchdoc = DocSearch(config.settings['workdir'].value)
+        logger.info("DocSearch object created")
+        self.config = config
+
     def _send_response(self, mimetype, binary=False):
         try:
             self.send_response(200)
@@ -47,6 +55,13 @@ class WebHandler(SimpleHTTPRequestHandler):
         except IOError:
             self.send_error(404, "File Not Found:" + os.curdir + self.path)
 
+    def _get_search_suggestions(self, term):
+        suggestions = self.searchdoc.find_suggestions(term)
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html")
+        self.end_headers()
+        self.wfile.write(bytes(term, "utf-8"))
+
     def do_HEAD(s):
         s.send_response(200)
         s.send_header("Content-Type", "text/html")
@@ -56,6 +71,8 @@ class WebHandler(SimpleHTTPRequestHandler):
         if s.path == "/":
             s.path = "/pages/index.html"
 
+        if s.path.split('?')[0].equals("search"):
+            _get_search_suggestions(s.path.split('?')[1].replace("term=", ""))
         if s.path.split('?')[0].endswith(".html"):
             s._send_response("text/html")
         if s.path.endswith(".css"):
@@ -64,6 +81,8 @@ class WebHandler(SimpleHTTPRequestHandler):
             s._send_response("application/javascript")
         if s.path.endswith(".png"):
             s._send_response("image/png", True)
+        if s.path.endswith(".gif"):
+            s._send_response("image/gif", True)
         if s.path.endswith(".properties"):
             s._send_response("text/plain")
         if s.path.split('?')[0].endswith(".pdf"):
@@ -86,10 +105,14 @@ if __name__ == '__main__':
         "ERROR": logging.ERROR,
     }[os.getenv("PAPERWORK_VERBOSE", "INFO")])
 
+    pconfig = config.PaperworkConfig()
+    pconfig.read()
+    logger.info("Read config...")
+
     logger.info("WebServer starting...")
 
     ServerClass = HTTPServer
-    httpd = ServerClass(('', 8001), WebHandler)
+    httpd = ServerClass(('', 8001), WebHandler(pconfig))
     try:
         httpd.serve_forever()
         logger.info("WebServer running!")
