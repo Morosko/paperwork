@@ -2,4 +2,4 @@
 *.pyc
 build
 paperwork.conf
-
+/src/paperwork/backend/*
