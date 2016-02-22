@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import sys
+import os
+sys.path = [os.path.abspath('../src/')] + sys.path
 
-sys.path += ['../src']
-
-#from paperwork.paperwork import GtkMain
+from paperwork.paperwork import main as GtkMain
 from paperwork.webend import main as WebEndMain
 
 usage = "usage: paperwork [-w]\n"\

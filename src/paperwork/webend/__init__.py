@@ -23,6 +23,7 @@ from paperwork_backend import config
 from paperwork_backend.docsearch import DocSearch
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 pconfig = None
@@ -34,15 +35,18 @@ searchdoc = None
 
 
 class WebHandler(SimpleHTTPRequestHandler):
-    def _send_response(self, mimetype, binary=False):
+    def _send_response(self, mimetype, binary=False, absPath=False):
         try:
             self.send_response(200)
             self.send_header("Content-Type", mimetype)
             self.end_headers()
             print(binary)
             if bool(binary):
-                f = open(os.path.dirname(os.path.abspath(__file__)) +
-                         self.path.split("?")[0], "rb")
+                if absPath:
+                    f = open(self.path, "rb")
+                else:
+                    f = open(os.path.dirname(os.path.abspath(__file__)) +
+                             self.path.split("?")[0], "rb")
                 self.wfile.write(f.read())
                 f.close()
             else:
@@ -51,15 +55,20 @@ class WebHandler(SimpleHTTPRequestHandler):
                 self.wfile.write(bytes(f.read(), "utf-8"))
                 f.close()
         except IOError:
-            self.send_error(404, "File Not Found:" + os.curdir + self.path)
+            self.send_error(404, "File Not Found:" + self.path)
 
     def _get_search_suggestions(self, term):
         global searchdoc
-        suggestions = searchdoc.find_suggestions(term)
+        logger.info(type(term))
+        suggestions = searchdoc.find_documents(term)
         self.send_response(200)
-        self.send_header("Content-Type", "text/html")
+        self.send_header("Content-Type", "text/json")
         self.end_headers()
-        self.wfile.write(bytes(term, "utf-8"))
+        self.wfile.write(bytes(json.dumps(
+                                {'files':
+                                    [{'name': s.name, 'id': s.id}
+                                        for s in suggestions]}),
+                               "utf-8"))
 
     def do_HEAD(s):
         s.send_response(200)
@@ -67,30 +76,35 @@ class WebHandler(SimpleHTTPRequestHandler):
         s.end_headers()
 
     def do_GET(s):
+        global searchdoc
+        print(len(s.path.split('?')))
         if s.path == "/":
             s.path = "/pages/index.html"
-
-        print(s.path)
 
         if s.path.split('?')[0].replace("/", "") == "search":
             logger.info("Send suggestion")
             s._get_search_suggestions(
                 s.path.split('?')[1].replace("term=", ""))
-        if s.path.split('?')[0].endswith(".html"):
+        elif not s.path.split('?')[0].endswith("viewer.html") and \
+                s.path.split('?')[0].endswith("doc.pdf"):
+            s.path = searchdoc.rootdir + os.sep + \
+                s.path.replace("/pages/web/", "")
+            s._send_response("application/pdf", True, True)
+        elif s.path.split('?')[0].endswith(".html"):
             s._send_response("text/html")
-        if s.path.endswith(".css"):
+        elif s.path.endswith(".css"):
             s._send_response("text/css")
-        if s.path.endswith(".js"):
+        elif s.path.endswith(".js"):
             s._send_response("application/javascript")
-        if s.path.endswith(".png"):
+        elif s.path.endswith(".png"):
             s._send_response("image/png", True)
-        if s.path.endswith(".gif"):
+        elif s.path.endswith(".gif"):
             s._send_response("image/gif", True)
-        if s.path.endswith(".properties"):
+        elif s.path.endswith(".properties"):
             s._send_response("text/plain")
-        if s.path.split('?')[0].endswith(".pdf"):
+        elif s.path.split('?')[0].endswith(".pdf"):
             s._send_response("application/pdf", True)
-        if s.path.endswith(".ico"):
+        elif s.path.endswith(".ico"):
             s._send_response("image/x-icon", True)
 
 
@@ -115,6 +129,7 @@ def main():
 
     logger.info("Creating DocSearch opject")
     searchdoc = DocSearch(pconfig.settings['workdir'].value)
+    print(searchdoc.rootdir)
     logger.info("DocSearch object created")
 
     logger.info("WebServer starting...")
