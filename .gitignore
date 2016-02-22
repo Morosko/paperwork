@@ -3,3 +3,5 @@
 /build/*
 paperwork.conf
 /src/paperwork/backend/*
+/dist/*
+/paperwork_backend.egg-info/*

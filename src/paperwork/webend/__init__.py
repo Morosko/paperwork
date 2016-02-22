@@ -19,8 +19,8 @@
 
 import sys
 import os
-from paperwork.backend import config
-from paperwork.backend.docsearch import DocSearch
+from paperwork_backend import config
+from paperwork_backend.docsearch import DocSearch
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import logging
 
